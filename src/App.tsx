@@ -51,12 +51,15 @@ function App() {
         {selectedShow && <p className="text-center mt-2 font-semibold">Stasera guardo: {selectedShow.title}</p>}
 
         {/* 5. form per aggiungere: l'id lo aggiunge App */}
-        <AddShowForm onSubmit={(newShow) => {
-          setShows(prev => [...prev, {
-            id: Math.max(...prev.map(s => s.id)) + 1,
-            ...newShow // titolo, anno e tipo che arrivano dal form
-          }])
-        }} />
+        <AddShowForm
+          existingTitles={shows.map(s => s.title)}
+          onSubmit={(newShow) => {
+            setShows(prev => [...prev, {
+              id: Math.max(...prev.map(s => s.id)) + 1,
+              ...newShow // titolo, anno e tipo che arrivano dal form
+            }])
+          }}
+        />
       </div>
     </section>
   </>

@@ -6,6 +6,7 @@ import type { Show } from "../data/watchlist";
 // il form non conosce la lista: restituisce ad App il titolo nuovo SENZA id
 type AddShowFormProps = {
     onSubmit?: (data: Omit<Show, 'id'>) => void;
+    existingTitles: string[]; // i titoli già nella lista, solo per controllare i doppioni
 }
 
 // un solo stato: valori ed errori insieme
@@ -21,7 +22,7 @@ const defaultState = {
     }
 }
 
-const AddShowForm = ({ onSubmit }: AddShowFormProps) => {
+const AddShowForm = ({ onSubmit, existingTitles }: AddShowFormProps) => {
     const [formState, setFormState] = useState(defaultState);
 
     function addShow(e: React.SubmitEvent<HTMLFormElement>) {
@@ -31,12 +32,32 @@ const AddShowForm = ({ onSubmit }: AddShowFormProps) => {
         let errors = { ...defaultState.errors };
 
         // uso trim() per togliere gli spazi all'inizio e alla fine: così un titolo fatto solo di spazi conta come vuoto
-        if (!formState.values.title.trim()) {
+        const title = formState.values.title.trim();
+        const year = formState.values.year;
+        const annoCorrente = new Date().getFullYear(); // l'anno di oggi, non scritto a mano
+
+        // TITOLO
+        if (!title) {
             errors = { ...errors, title: ['Il titolo è obbligatorio'] };
+        } else {
+            if (title.length < 2) {
+                errors = {
+                    ...errors,
+                    title: Array.from(new Set([...errors.title, 'Inserisci almeno 2 caratteri']))
+                }
+            }
+            // confronto in minuscolo, così "inception" e "Inception" sono lo stesso titolo
+            if (existingTitles.some(t => t.toLowerCase() === title.toLowerCase())) {
+                errors = {
+                    ...errors,
+                    title: Array.from(new Set([...errors.title, 'Questo titolo è già nella lista']))
+                }
+            }
         }
 
-        if (formState.values.year < 1900 || formState.values.year > 2026) {
-            errors = { ...errors, year: ["L'anno deve essere tra 1900 e 2026"] };
+        // ANNO
+        if (year < 1900 || year > annoCorrente) {
+            errors = { ...errors, year: [`L'anno deve essere tra il 1900 e il ${annoCorrente}`] };
         }
 
         // se almeno un campo ha errori, li mostro e mi fermo
@@ -47,7 +68,7 @@ const AddShowForm = ({ onSubmit }: AddShowFormProps) => {
 
         // reset del form e passo i dati ad App
         setFormState(defaultState);
-        onSubmit?.({ ...formState.values, title: formState.values.title.trim() });
+        onSubmit?.({ ...formState.values, title });
     }
 
     return (
