@@ -3,6 +3,7 @@ export type Show = {
     title: string;
     year: number;
     kind: 'film' | 'serie';
+    seen?: boolean; // true se l'ho già visto; all'inizio non c'è, quindi "non visto"
 }
 
 

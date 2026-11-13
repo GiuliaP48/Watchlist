@@ -18,6 +18,12 @@ function App() {
   const numFilm = shows.filter((show) => show.kind === 'film').length;
   const numSerie = shows.filter((show) => show.kind === 'serie').length;
 
+  // "Visto": inverto seen del titolo cliccato
+  function toggleSeen(id: number) {
+    // map: per il titolo giusto un nuovo oggetto con seen al contrario (se era visto diventa non visto e viceversa), gli altri restano uguali
+    setShows(prev => prev.map(s => s.id === id ? { ...s, seen: !s.seen } : s));
+  }
+
   return <>
     <section className="min-h-screen flex justify-center items-center p-6">
       <div className="w-full max-w-lg">
@@ -35,9 +41,10 @@ function App() {
           {showFiltrati.map(show =>
             <ShowRow
               show={show}
-              key={show.id} 
+              key={show.id}
               onClick={() => setSelectedId(show.id === selectedId ? undefined : show.id)}
               active={show.id === selectedId}
+              onToggleSeen={() => toggleSeen(show.id)}
             />
           )}
         </div>
