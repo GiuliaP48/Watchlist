@@ -8,9 +8,10 @@ type ShowProps = {
     onClick?: () => void;
     active?: boolean;
     onToggleSeen?: () => void; // la funzione che parte quando clicco la casella "Visto": me la passa App
+    onRate?: (voto: number) => void; // la funzione che parte quando clicco una stella: mi dice quale (da 1 a 5)
 }
 
-const ShowRow = ({ show, onClick, active, onToggleSeen }: ShowProps) => {
+const ShowRow = ({ show, onClick, active, onToggleSeen, onRate }: ShowProps) => {
     return (
         <div
             className={cn(
@@ -25,7 +26,18 @@ const ShowRow = ({ show, onClick, active, onToggleSeen }: ShowProps) => {
                 <p className="text-gray-500">{show.year}</p>
             </div>
 
+            {/* PARTE DESTRA: stelle, Visto e badge */}
             <div className="flex items-center gap-3">
+                {/* voto: 5 stelle, gialle fino al voto scelto */}
+                <div className="flex">
+                    {[1, 2, 3, 4, 5].map(n =>
+                        <button
+                            key={n}
+                            onClick={() => onRate?.(n)}
+                            className={cn("text-xl text-gray-300", show.rating && n <= show.rating && "text-yellow-400")}
+                        >★</button>
+                    )}
+                </div>
                 {/* casella "Visto" */}
                 <div className="flex items-center gap-1 text-sm">
                     <input type="checkbox" checked={show.seen === true} onChange={onToggleSeen} />

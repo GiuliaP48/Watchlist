@@ -24,6 +24,11 @@ function App() {
     setShows(prev => prev.map(s => s.id === id ? { ...s, seen: !s.seen } : s));
   }
 
+  // voto: se clicco la stella già scelta tolgo il voto, altrimenti metto quello nuovo
+  function rate(id: number, voto: number) {
+    setShows(prev => prev.map(s => s.id === id ? { ...s, rating: s.rating === voto ? undefined : voto } : s));
+  }
+
   return <>
     <section className="min-h-screen flex justify-center items-center p-6">
       <div className="w-full max-w-lg">
@@ -45,6 +50,7 @@ function App() {
               onClick={() => setSelectedId(show.id === selectedId ? undefined : show.id)}
               active={show.id === selectedId}
               onToggleSeen={() => toggleSeen(show.id)}
+              onRate={(voto) => rate(show.id, voto)}
             />
           )}
         </div>

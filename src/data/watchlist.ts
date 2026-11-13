@@ -4,6 +4,7 @@ export type Show = {
     year: number;
     kind: 'film' | 'serie';
     seen?: boolean; // true se l'ho già visto; all'inizio non c'è, quindi "non visto"
+    rating?: number; // voto da 1 a 5; se non c'è, nessun voto
 }
 
 
