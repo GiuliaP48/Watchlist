@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Button from "./Button";
-import { cn } from "../utils/cn";
 import type { Show } from "../data/watchlist";
+import Input from "./Input";
 
 // il form non conosce la lista: restituisce ad App il titolo nuovo SENZA id
 type AddShowFormProps = {
@@ -9,31 +9,34 @@ type AddShowFormProps = {
     existingTitles: string[]; // i titoli già nella lista, solo per controllare i doppioni
 }
 
-// un solo stato: valori ed errori insieme
+// i valori del form: uno Show senza id
+type Values = Omit<Show, 'id'>;
+
+// un solo stato: valori ed errori insieme e se il form è già stato inviato
 const defaultState = {
     values: {
         title: "",
         year: 0,
-        kind: 'film' as 'film' | 'serie',
-    },
+        kind: 'film',
+    } as Values,
     errors: {
         title: [] as string[],
         year: [] as string[],
-    }
+    },
+    submitted: false, // diventa true al primo invio: da lì gli errori si aggiornano a ogni tasto
 }
 
 const AddShowForm = ({ onSubmit, existingTitles }: AddShowFormProps) => {
     const [formState, setFormState] = useState(defaultState);
 
-    function addShow(e: React.SubmitEvent<HTMLFormElement>) {
-        e.preventDefault(); // la pagina non si ricarica
-
-        // costruisco gli errori in una variabile, e solo alla fine li salvo nello stato
+    // controlla i valori e restituisce gli errori di ogni campo
+    // la uso sia all'invio sia mentre si scrive
+    function validate(values: Values) {
+        // costruisco gli errori in una variabile e alla fine li restituisco (return)
         let errors = { ...defaultState.errors };
 
         // uso trim() per togliere gli spazi all'inizio e alla fine: così un titolo fatto solo di spazi conta come vuoto
-        const title = formState.values.title.trim();
-        const year = formState.values.year;
+        const title = values.title.trim();
         const annoCorrente = new Date().getFullYear(); // l'anno di oggi, non scritto a mano
 
         // TITOLO
@@ -56,69 +59,69 @@ const AddShowForm = ({ onSubmit, existingTitles }: AddShowFormProps) => {
         }
 
         // ANNO
-        if (year < 1900 || year > annoCorrente) {
+        if (values.year < 1900 || values.year > annoCorrente) {
             errors = { ...errors, year: [`L'anno deve essere tra il 1900 e il ${annoCorrente}`] };
         }
+        return errors;
+    }
+
+    // una sola funzione per aggiornare qualsiasi campo: riceve tutti i valori del form, già aggiornati
+    function updateField(values: Values) {
+        setFormState(prev => ({
+            ...prev,
+            values,
+            // prima del primo invio non mostro errori, dopo li ricalcolo a ogni modifica
+            errors: prev.submitted ? validate(values) : prev.errors,
+        }))
+    }
+
+    function addShow(e: React.SubmitEvent<HTMLFormElement>) {
+        e.preventDefault(); // la pagina non si ricarica
+
+        const errors = validate(formState.values);
 
         // se almeno un campo ha errori, li mostro e mi fermo
+        // submitted: true --> da adesso gli errori si aggiornano mentre si scrive
         if (Object.values(errors).some(arr => arr.length)) {
-            setFormState(prev => ({ ...prev, errors }));
+            setFormState(prev => ({ ...prev, errors, submitted: true }));
             return;
         }
 
         // reset del form e passo i dati ad App
         setFormState(defaultState);
-        onSubmit?.({ ...formState.values, title });
+        onSubmit?.({ ...formState.values, title: formState.values.title.trim() });
     }
 
     return (
         <form onSubmit={addShow} className="flex flex-col gap-3">
             <h2 className="font-bold text-2xl mt-10 mb-1">Aggiungi un titolo</h2>
 
-            <input
-                className={cn(
-                    "bg-gray-200 rounded-full w-full py-2 px-4",
-                    formState.errors.title.length > 0 && "border-2 border-red-500"
-                )}
+            <Input
                 placeholder="Titolo"
                 value={formState.values.title}
-                onChange={(e) => {
-                    setFormState(prev => ({
-                        ...prev,
-                        values: { ...prev.values, title: e.target.value },
-                    }))
-                }}
+                onChange={(valore) => updateField({ ...formState.values, title: valore })}
+                errors={formState.errors.title}
             />
-            {formState.errors.title.map((error, i) => <p key={i} className="text-red-600 text-sm px-4">{error}</p>)}
 
-            <input
-                className={cn(
-                    "bg-gray-200 rounded-full w-full py-2 px-4",
-                    formState.errors.year.length > 0 && "border-2 border-red-500"
-                )}
+            <Input
                 placeholder="Anno"
                 type="number"
                 value={formState.values.year}
-                onChange={(e) => {
-                    setFormState(prev => ({
-                        ...prev,
-                        values: { ...prev.values, year: +e.target.value },
-                    }))
-                }}
+                onChange={(valore) => updateField({ ...formState.values, year: +valore })}
+                errors={formState.errors.year}
             />
-            {formState.errors.year.map((error, i) => <p key={i} className="text-red-600 text-sm px-4">{error}</p>)}
 
             {/* questi due NON inviano il form*/}
             <div className="flex gap-2">
                 <Button
                     variant={formState.values.kind === 'film' ? 'primary' : 'secondary'}
-                    onClick={() => setFormState(prev => ({ ...prev, values: { ...prev.values, kind: 'film' } }))}
+                    onClick={() => updateField({ ...formState.values, kind: 'film' })}
                 >
                     Film
                 </Button>
                 <Button
                     variant={formState.values.kind === 'serie' ? 'primary' : 'secondary'}
-                    onClick={() => setFormState(prev => ({ ...prev, values: { ...prev.values, kind: 'serie' } }))}
+                    onClick={() => updateField({ ...formState.values, kind: 'serie' })}
                 >
                     Serie
                 </Button>
