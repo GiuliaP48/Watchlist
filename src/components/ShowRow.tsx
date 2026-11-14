@@ -9,9 +9,10 @@ type ShowProps = {
     active?: boolean;
     onToggleSeen?: () => void; // la funzione che parte quando clicco la casella "Visto": me la passa App
     onRate?: (voto: number) => void; // la funzione che parte quando clicco una stella: mi dice quale (da 1 a 5)
+    onEdit?: () => void; // la funzione che parte quando clicco "Modifica": me la passa App
 }
 
-const ShowRow = ({ show, onClick, active, onToggleSeen, onRate }: ShowProps) => {
+const ShowRow = ({ show, onClick, active, onToggleSeen, onRate, onEdit }: ShowProps) => {
     return (
         <div
             className={cn(
@@ -34,7 +35,7 @@ const ShowRow = ({ show, onClick, active, onToggleSeen, onRate }: ShowProps) => 
                         <button
                             key={n}
                             onClick={() => onRate?.(n)}
-                            className={cn("text-xl text-gray-300", show.rating && n <= show.rating && "text-yellow-400")}
+                            className={cn("text-xl text-gray-300 focus:outline-none", show.rating && n <= show.rating && "text-yellow-400")}
                         >★</button>
                     )}
                 </div>
@@ -53,6 +54,8 @@ const ShowRow = ({ show, onClick, active, onToggleSeen, onRate }: ShowProps) => 
                 >
                     {show.kind === 'film' ? "Film" : "Serie"}
                 </span>
+                {/* modifica: riempie il form con questo titolo */}
+                <button onClick={onEdit} className="text-sm text-blue-600 underline">Modifica</button>
             </div>
         </div>
     )

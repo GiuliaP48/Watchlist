@@ -7,6 +7,8 @@ import Input from "./Input";
 type AddShowFormProps = {
     onSubmit?: (data: Omit<Show, 'id'>) => void;
     existingTitles: string[]; // i titoli già nella lista, solo per controllare i doppioni
+    editingShow?: Show; // il titolo che sto modificando: se c'è, il form parte già riempito e il bottone dice "Salva"
+    onCancel?: () => void; // la funzione che parte quando clicco "Annulla": me la passa App
 }
 
 // i valori del form: uno Show senza id
@@ -26,8 +28,12 @@ const defaultState = {
     submitted: false, // diventa true al primo invio: da lì gli errori si aggiornano a ogni tasto
 }
 
-const AddShowForm = ({ onSubmit, existingTitles }: AddShowFormProps) => {
-    const [formState, setFormState] = useState(defaultState);
+const AddShowForm = ({ onSubmit, existingTitles, editingShow, onCancel }: AddShowFormProps) => {
+    const [formState, setFormState] = useState({
+        ...defaultState,
+        // se sto modificando parto con i valori di quel titolo, altrimenti con il form vuoto
+        values: editingShow ? { title: editingShow.title, year: editingShow.year, kind: editingShow.kind } : defaultState.values,
+    });
 
     // controlla i valori e restituisce gli errori di ogni campo
     // la uso sia all'invio sia mentre si scrive
@@ -94,8 +100,7 @@ const AddShowForm = ({ onSubmit, existingTitles }: AddShowFormProps) => {
 
     return (
         <form onSubmit={addShow} className="flex flex-col gap-3">
-            <h2 className="font-bold text-2xl mt-10 mb-1">Aggiungi un titolo</h2>
-
+            <h2 className="font-bold text-2xl mt-10 mb-1">{editingShow ? 'Modifica un titolo' : 'Aggiungi un titolo'}</h2>
             <Input
                 placeholder="Titolo"
                 value={formState.values.title}
@@ -127,8 +132,11 @@ const AddShowForm = ({ onSubmit, existingTitles }: AddShowFormProps) => {
                 </Button>
             </div>
 
-            {/* questo invia il form (anche premendo Invio) */}
-            <Button type="submit" variant="primary">Aggiungi</Button>
+            {/* questo invia o salva il form (anche premendo Invio) */}
+            <Button type="submit" variant="primary">{editingShow ? 'Salva' : 'Aggiungi'}</Button>
+
+            {/* Annulla: solo quando modifico, NON invia il form */}
+            {editingShow && <Button onClick={onCancel}>Annulla</Button>}
         </form>
     )
 }

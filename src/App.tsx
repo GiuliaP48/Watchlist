@@ -12,11 +12,13 @@ function App() {
   const [shows, setShows] = useState(watchlist);
   const [selectedId, setSelectedId] = useState<number>();
   const [filtro, setFiltro] = useState<Filtro>('tutti');
-
+  const [editingId, setEditingId] = useState<number>(); // l'id del titolo che sto modificando (se non c'è, sto aggiungendo)
+  
   const selectedShow = shows.find((show) => show.id === selectedId);
   const showFiltrati = shows.filter((show) => filtro === 'tutti' || show.kind === filtro);
   const numFilm = shows.filter((show) => show.kind === 'film').length;
   const numSerie = shows.filter((show) => show.kind === 'serie').length;
+  const editingShow = shows.find((show) => show.id === editingId);
 
   // "Visto": inverto seen del titolo cliccato
   function toggleSeen(id: number) {
@@ -51,6 +53,7 @@ function App() {
               active={show.id === selectedId}
               onToggleSeen={() => toggleSeen(show.id)}
               onRate={(voto) => rate(show.id, voto)}
+              onEdit={() => setEditingId(show.id)}
             />
           )}
         </div>
@@ -65,12 +68,21 @@ function App() {
 
         {/* 5. form per aggiungere: l'id lo aggiunge App */}
         <AddShowForm
-          existingTitles={shows.map(s => s.title)}
+          key={editingId}
+          editingShow={editingShow}
+          onCancel={() => setEditingId(undefined)}
+          existingTitles={shows.filter(s => s.id !== editingId).map(s => s.title)}
           onSubmit={(newShow) => {
-            setShows(prev => [...prev, {
-              id: Math.max(...prev.map(s => s.id)) + 1,
-              ...newShow // titolo, anno e tipo che arrivano dal form
-            }])
+            if (editingShow) {
+              // modifica: aggiorno il titolo giusto (tengo id, visto e voto) e torno ad aggiungere
+              setShows(prev => prev.map(s => s.id === editingId ? { ...s, ...newShow } : s));
+              setEditingId(undefined);
+            } else {
+              setShows(prev => [...prev, {
+                id: Math.max(...prev.map(s => s.id)) + 1,
+                ...newShow // titolo, anno e tipo che arrivano dal form
+              }])
+            }
           }}
         />
       </div>
