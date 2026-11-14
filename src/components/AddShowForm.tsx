@@ -3,7 +3,7 @@ import Button from "./Button";
 import type { Show } from "../data/watchlist";
 import Input from "./Input";
 
-// il form non conosce la lista: restituisce ad App il titolo nuovo SENZA id
+// il form non conosce la lista: restituisce ad App il titolo (nuovo o modificato) SENZA id
 type AddShowFormProps = {
     onSubmit?: (data: Omit<Show, 'id'>) => void;
     existingTitles: string[]; // i titoli già nella lista, solo per controllare i doppioni

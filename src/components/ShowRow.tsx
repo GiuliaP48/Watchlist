@@ -27,7 +27,7 @@ const ShowRow = ({ show, onClick, active, onToggleSeen, onRate, onEdit }: ShowPr
                 <p className="text-gray-500">{show.year}</p>
             </div>
 
-            {/* PARTE DESTRA: stelle, Visto e badge */}
+            {/* PARTE DESTRA: stelle, Visto, badge e Modifica */}
             <div className="flex items-center gap-3">
                 {/* voto: 5 stelle, gialle fino al voto scelto */}
                 <div className="flex">

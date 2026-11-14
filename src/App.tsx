@@ -66,7 +66,7 @@ function App() {
         {/* 4. stasera guardo */}
         {selectedShow && <p className="text-center mt-2 font-semibold">Stasera guardo: {selectedShow.title}</p>}
 
-        {/* 5. form per aggiungere: l'id lo aggiunge App */}
+        {/* 5. form per aggiungere o modificare: l'id dei titoli nuovi lo aggiunge App */}
         <AddShowForm
           key={editingId}
           editingShow={editingShow}
