@@ -1,6 +1,11 @@
 
+import { Edit } from "lucide-react";
 import type { Show } from "../data/watchlist";
 import { cn } from "../utils/cn";
+import Button from "./Button";
+import { MorphIcon } from "morphicons/react";
+import { Loader2, Trash2 } from "lucide";
+import { useState } from "react";
 
 // ShowProps --> proprietà che passo alla funzione ShowRow
 type ShowProps = {
@@ -10,13 +15,16 @@ type ShowProps = {
     onToggleSeen?: () => void; // la funzione che parte quando clicco la casella "Visto": me la passa App
     onRate?: (voto: number) => void; // la funzione che parte quando clicco una stella: mi dice quale (da 1 a 5)
     onEdit?: () => void; // la funzione che parte quando clicco "Modifica": me la passa App
+    onDelete?: () => Promise<void>; // la funzione che parte quando clicco il cestino: me la passa App
 }
 
-const ShowRow = ({ show, onClick, active, onToggleSeen, onRate, onEdit }: ShowProps) => {
+const ShowRow = ({ show, onClick, active, onToggleSeen, onRate, onEdit, onDelete }: ShowProps) => {
+    const [isDeleting, setIsDeleting] = useState(false);
+
     return (
         <div
             className={cn(
-                "flex items-center justify-between p-4 rounded-xl border border-gray-300 gap-4",
+                "flex items-center justify-between p-4 rounded-xl border border-gray-300 gap-4 w-auto",
                 active && "border-2 border-blue-500 bg-blue-50"
             )}
         >
@@ -27,7 +35,7 @@ const ShowRow = ({ show, onClick, active, onToggleSeen, onRate, onEdit }: ShowPr
                 <p className="text-gray-500">{show.year}</p>
             </div>
 
-            {/* PARTE DESTRA: stelle, Visto, badge e Modifica */}
+            {/* PARTE DESTRA: stelle, Visto, badge, modifica ed elimina */}
             <div className="flex items-center gap-3">
                 {/* voto: 5 stelle, gialle fino al voto scelto */}
                 <div className="flex">
@@ -54,8 +62,37 @@ const ShowRow = ({ show, onClick, active, onToggleSeen, onRate, onEdit }: ShowPr
                 >
                     {show.kind === 'film' ? "Film" : "Serie"}
                 </span>
-                {/* modifica: riempie il form con questo titolo */}
-                <button onClick={onEdit} className="text-sm text-blue-600 underline">Modifica</button>
+                <div className="flex gap-1">
+                    {/* modifica: riempie il form con questo titolo */}
+                    <Button
+                        variant="secondary"
+                        onlyIcon
+                        className="bg-transparent text-blue-500 hover:bg-blue-500 hover:text-white"
+                        onClick={e => {
+                            e.stopPropagation();
+                            onEdit?.();
+                        }}>
+                        <Edit />
+                    </Button>
+
+                    <Button
+                        variant="danger"
+                        className={cn(
+                            "bg-transparent text-red-600 hover:bg-red-600 hover:text-white",
+                            isDeleting && 'animate-spin')}
+                        onlyIcon
+                        disabled={isDeleting}
+                        onClick={async (e) => {
+                            e.stopPropagation();
+                            setIsDeleting(true)
+                            await onDelete?.();
+                            setIsDeleting(false)
+                        }}>
+                        <MorphIcon
+                            icon={isDeleting ? Loader2 : Trash2}
+                        />
+                    </Button>
+                </div>
             </div>
         </div>
     )

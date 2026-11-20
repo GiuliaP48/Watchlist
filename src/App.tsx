@@ -1,34 +1,101 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ShowRow from "./components/ShowRow";
 import Button from "./components/Button";
-import { watchlist } from "./data/watchlist";
+import { type Show } from "./data/watchlist";
 
 import AddShowForm from "./components/AddShowForm";
+import { env } from "./utils/env";
 
 type Filtro = 'tutti' | 'film' | 'serie';
 
 function App() {
 
-  const [shows, setShows] = useState(watchlist);
-  const [selectedId, setSelectedId] = useState<number>();
+  const [shows, setShows] = useState<Show[]>([]);
+  const [selectedId, setSelectedId] = useState<string>();
   const [filtro, setFiltro] = useState<Filtro>('tutti');
-  const [editingId, setEditingId] = useState<number>(); // l'id del titolo che sto modificando (se non c'è, sto aggiungendo)
-  
+  const [editingId, setEditingId] = useState<string>(); // l'id del titolo che sto modificando (se non c'è, sto aggiungendo)
+
   const selectedShow = shows.find((show) => show.id === selectedId);
   const showFiltrati = shows.filter((show) => filtro === 'tutti' || show.kind === filtro);
   const numFilm = shows.filter((show) => show.kind === 'film').length;
   const numSerie = shows.filter((show) => show.kind === 'serie').length;
   const editingShow = shows.find((show) => show.id === editingId);
 
-  // "Visto": inverto seen del titolo cliccato
-  function toggleSeen(id: number) {
-    // map: per il titolo giusto un nuovo oggetto con seen al contrario (se era visto diventa non visto e viceversa), gli altri restano uguali
-    setShows(prev => prev.map(s => s.id === id ? { ...s, seen: !s.seen } : s));
+  // collego con il backend (db.json)
+  useEffect(() => {
+    fetch(env.backendUrl + '/watchlist')
+      .then(res => res.json())
+      .then(data => {
+        setShows(data);
+      })
+
+  }, [])
+
+  // "Visto": inverto seen del titolo cliccato e lo salvo sul backend
+  async function toggleSeen(id: string) {
+    // cerco nella lista il titolo cliccato
+    const show = shows.find(s => s.id === id);
+    // se non lo trovo mi fermo
+    if (!show) return;
+
+    const res = await fetch(`${env.backendUrl}/watchlist/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...show, seen: !show.seen }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    // il backend mi risponde con il titolo aggiornato
+    const updatedShow = await res.json();
+    // nello state sostituisco il titolo vecchio con quello aggiornato, gli altri restano uguali
+    setShows(prev => prev.map(s => s.id === updatedShow.id ? updatedShow : s));
   }
 
-  // voto: se clicco la stella già scelta tolgo il voto, altrimenti metto quello nuovo
-  function rate(id: number, voto: number) {
-    setShows(prev => prev.map(s => s.id === id ? { ...s, rating: s.rating === voto ? undefined : voto } : s));
+  // voto: se clicco la stella già scelta tolgo il voto, altrimenti metto quello nuovo, e lo salvo sul backend
+  async function rate(id: string, voto: number) {
+    // cerco nella lista il titolo cliccato
+    const show = shows.find(s => s.id === id);
+    // se non lo trovo mi fermo
+    if (!show) return;
+
+    const res = await fetch(`${env.backendUrl}/watchlist/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...show, rating: show.rating === voto ? undefined : voto }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    // il backend mi risponde con il titolo aggiornato
+    const updatedShow = await res.json();
+    // nello state sostituisco il titolo vecchio con quello aggiornato, gli altri restano uguali
+    setShows(prev => prev.map(s => s.id === updatedShow.id ? updatedShow : s));
+  }
+
+  // POST --> aggiungo un titolo nuovo sul backend
+  async function onAddShow(data: Omit<Show, 'id'>) {
+    const res = await fetch(env.backendUrl + '/watchlist', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const newShow = await res.json();
+    setShows(prev => [...prev, newShow])
+  }
+
+  // PUT --> salvo sul backend il titolo modificato
+  async function onUpdateShow(data: Omit<Show, 'id'>) {
+    const res = await fetch(`${env.backendUrl}/watchlist/${editingId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...editingShow, ...data }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const updatedShow = await res.json();
+    setShows(prev => prev.map(show => show.id === updatedShow.id ? updatedShow : show))
+    setEditingId(undefined);
+  }
+
+  // DELETE --> elimino il titolo dal backend
+  async function onDeleteShow(id: string) {
+    await fetch(`${env.backendUrl}/watchlist/${id}`, {
+      method: 'DELETE',
+    });
+    setShows(prev => prev.filter(show => show.id !== id))
   }
 
   return <>
@@ -54,6 +121,7 @@ function App() {
               onToggleSeen={() => toggleSeen(show.id)}
               onRate={(voto) => rate(show.id, voto)}
               onEdit={() => setEditingId(show.id)}
+              onDelete={() => onDeleteShow(show.id)}
             />
           )}
         </div>
@@ -66,24 +134,13 @@ function App() {
         {/* 4. stasera guardo */}
         {selectedShow && <p className="text-center mt-2 font-semibold">Stasera guardo: {selectedShow.title}</p>}
 
-        {/* 5. form per aggiungere o modificare: l'id dei titoli nuovi lo aggiunge App */}
+        {/* 5. form per aggiungere o modificare: l'id dei titoli nuovi lo crea il backend */}
         <AddShowForm
           key={editingId}
           editingShow={editingShow}
           onCancel={() => setEditingId(undefined)}
           existingTitles={shows.filter(s => s.id !== editingId).map(s => s.title)}
-          onSubmit={(newShow) => {
-            if (editingShow) {
-              // modifica: aggiorno il titolo giusto (tengo id, visto e voto) e torno ad aggiungere
-              setShows(prev => prev.map(s => s.id === editingId ? { ...s, ...newShow } : s));
-              setEditingId(undefined);
-            } else {
-              setShows(prev => [...prev, {
-                id: Math.max(...prev.map(s => s.id)) + 1,
-                ...newShow // titolo, anno e tipo che arrivano dal form
-              }])
-            }
-          }}
+          onSubmit={editingShow ? onUpdateShow : onAddShow}
         />
       </div>
     </section>

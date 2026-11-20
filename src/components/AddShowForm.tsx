@@ -2,10 +2,13 @@ import { useState } from "react";
 import Button from "./Button";
 import type { Show } from "../data/watchlist";
 import Input from "./Input";
+import { MorphIcon } from "morphicons/react";
+import { cn } from "../utils/cn";
+import { Loader2, Plus, Save } from "lucide";
 
 // il form non conosce la lista: restituisce ad App il titolo (nuovo o modificato) SENZA id
 type AddShowFormProps = {
-    onSubmit?: (data: Omit<Show, 'id'>) => void;
+    onSubmit?: (data: Omit<Show, 'id'>) => Promise<void>;
     existingTitles: string[]; // i titoli già nella lista, solo per controllare i doppioni
     editingShow?: Show; // il titolo che sto modificando: se c'è, il form parte già riempito e il bottone dice "Salva"
     onCancel?: () => void; // la funzione che parte quando clicco "Annulla": me la passa App
@@ -14,8 +17,9 @@ type AddShowFormProps = {
 // i valori del form: uno Show senza id
 type Values = Omit<Show, 'id'>;
 
-// un solo stato: valori ed errori insieme e se il form è già stato inviato
+// un solo stato: valori, errori, se il form è già stato inviato e se sta salvando
 const defaultState = {
+    isSubmitting: false, // true mentre aspetto il backend: fa girare la rotellina e blocca i bottoni
     values: {
         title: "",
         year: 0,
@@ -81,7 +85,7 @@ const AddShowForm = ({ onSubmit, existingTitles, editingShow, onCancel }: AddSho
         }))
     }
 
-    function addShow(e: React.SubmitEvent<HTMLFormElement>) {
+    async function addShow(e: React.SubmitEvent<HTMLFormElement>) {
         e.preventDefault(); // la pagina non si ricarica
 
         const errors = validate(formState.values);
@@ -93,10 +97,16 @@ const AddShowForm = ({ onSubmit, existingTitles, editingShow, onCancel }: AddSho
             return;
         }
 
-        // reset del form e passo i dati ad App
+        // inizio a salvare: la rotellina gira
+        setFormState(prev => ({ ...prev, isSubmitting: true }));
+        // passo i dati ad App e aspetto che il backend risponda
+        await onSubmit?.({ ...formState.values, title: formState.values.title.trim() });
+        // reset del form
         setFormState(defaultState);
-        onSubmit?.({ ...formState.values, title: formState.values.title.trim() });
     }
+
+    // true se almeno un campo ha degli errori
+    const hasErrors = Object.values(formState.errors).some(arr => arr.length > 0);
 
     return (
         <form onSubmit={addShow} className="flex flex-col gap-3">
@@ -132,11 +142,28 @@ const AddShowForm = ({ onSubmit, existingTitles, editingShow, onCancel }: AddSho
                 </Button>
             </div>
 
-            {/* questo invia o salva il form (anche premendo Invio) */}
-            <Button type="submit" variant="primary">{editingShow ? 'Salva' : 'Aggiungi'}</Button>
+            <div className="flex gap-4 justify-center">
+                {/* invia o salva il form (anche premendo Invio) disabilitato mentre salva oppure se ci sono errori */}
+                <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={formState.isSubmitting || hasErrors}
+                    className="w-fit"
+                >
+                    <MorphIcon
+                        className={cn(formState.isSubmitting && 'animate-spin')}
+                        icon={formState.isSubmitting ? Loader2 : editingShow ? Save : Plus}
+                    />
+                    {editingShow ? 'Salva' : 'Aggiungi'} titolo
+                </Button>
 
-            {/* Annulla: solo quando modifico, NON invia il form */}
-            {editingShow && <Button onClick={onCancel}>Annulla</Button>}
+                {editingShow && (
+                    <Button
+                        disabled={formState.isSubmitting}
+                        onClick={onCancel}
+                        variant="tertiary"
+                    >Annulla modifica</Button>)}
+            </div>
         </form>
     )
 }

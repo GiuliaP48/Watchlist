@@ -1,24 +1,31 @@
+import type { ComponentProps } from "react";
 import { cn } from "../utils/cn";
 
-type ButtonProps = {
-    children: string;
-    onClick?: () => void;
-    variant?: 'primary' | 'secondary';  // primary = attivo (blu), secondary = non attivo (grigio)
-    type?: 'button' | 'submit';         // submit = invia il form, button = non lo invia
+type ButtonProps = ComponentProps<'button'> & {
+    variant?: 'primary' | 'secondary' | 'tertiary' | 'danger'; // primary = attivo (blu), secondary = non attivo (grigio), tertiary = con bordo, danger = rosso
+    type?: 'button' | 'submit'; // submit = invia il form, button = non lo invia
+    onlyIcon?: boolean;
 }
 
-const Button = ({ children, onClick, variant = 'secondary', type = 'button' }: ButtonProps) => {
+const Button = ({ variant = 'secondary', type = 'button', onlyIcon, ...props }: ButtonProps) => {
     return (
         <button
+            {...props}
             type={type}
-            onClick={onClick}
-            className={cn(
-                "w-fit px-5 py-2 rounded-full font-medium cursor-pointer",
-                variant === 'primary' ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"
-            )}
+            className={
+                cn(
+                    "h-12 enabled:cursor-pointer rounded-full disabled:opacity-50 disabled:cursor-not-allowed flex gap-2 items-center justify-center",
+                    onlyIcon ? 'aspect-square' : 'px-8',
+                    {
+                        "bg-blue-500": variant === 'primary',
+                        "bg-red-400": variant === 'danger',
+                        "bg-gray-200": variant === 'secondary',
+                        "border bg-gray-200": variant === 'tertiary',
+                    },
+                    props.className,
+                )}
         >
-            {children}
-        </button>
+        </button >
     )
 }
 
